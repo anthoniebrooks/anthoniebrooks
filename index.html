@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Football Betting Model - Home</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .team-search-container {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .team-search-input {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            color: #64c8ff;
+            font-family: inherit;
+        }
+
+        .team-search-input::placeholder {
+            color: #7a7a90;
+        }
+
+        .team-search-input:focus {
+            outline: none;
+            border-color: #64c8ff;
+            box-shadow: 0 0 10px rgba(100, 200, 255, 0.2);
+        }
+
+        .team-stats-table-container {
+            overflow-x: auto;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(100, 200, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .team-stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+
+        .team-stats-table th {
+            background: rgba(100, 200, 100, 0.1);
+            color: #64c8ff;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(100, 200, 255, 0.3);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+
+        .team-stats-table th:hover {
+            background: rgba(100, 200, 100, 0.2);
+        }
+
+        .team-stats-table th.sortable::after {
+            content: ' ⬍';
+            font-size: 0.8em;
+            opacity: 0.5;
+        }
+
+        .team-stats-table th.sorted-asc::after {
+            content: ' ↑';
+            opacity: 1;
+            color: #64c864;
+        }
+
+        .team-stats-table th.sorted-desc::after {
+            content: ' ↓';
+            opacity: 1;
+            color: #64c864;
+        }
+
+        .team-stats-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+            color: #a0a0b0;
+        }
+
+        .team-stats-table tr:hover {
+            background: rgba(100, 200, 255, 0.05);
+        }
+
+        .team-name-cell {
+            color: #64c8ff;
+            font-weight: 600;
+        }
+
+        .rank-positive {
+            color: #64c864;
+            font-weight: bold;
+        }
+
+        .rank-negative {
+            color: #ff6b6b;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            background: rgba(100, 200, 255, 0.1);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            color: #64c8ff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pagination button:hover {
+            background: rgba(100, 200, 255, 0.2);
+        }
+
+        .pagination button.active {
+            background: rgba(100, 200, 255, 0.4);
+            border-color: #64c8ff;
+        }
+
+        .stats-info {
+            color: #7a7a90;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .team-detail-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .team-detail-modal.active {
+            display: flex;
+        }
+
+        .team-detail-content {
+            background: rgba(20, 20, 40, 0.95);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 900px;
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 90%;
+            color: #a0a0b0;
+        }
+
+        .team-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(100, 200, 255, 0.2);
+            padding-bottom: 15px;
+        }
+
+        .team-detail-title {
+            color: #64c8ff;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .team-detail-close {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .team-detail-close:hover {
+            background: rgba(255, 107, 107, 0.2);
+        }
+
+        .team-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .team-detail-item {
+            background: rgba(100, 200, 255, 0.05);
+            border: 1px solid rgba(100, 200, 255, 0.2);
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .team-detail-label {
+            color: #7a7a90;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .team-detail-value {
+            color: #64c8ff;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .dashboard {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(100, 200, 255, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-header {
+            margin-bottom: 30px;
+        }
+
+        .dashboard-title {
+            color: #64c8ff;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .reset-btn {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: rgba(255, 107, 107, 0.2);
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">🏈 CFB Betting Model</div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link active">Dashboard</a></li>
+                <li><a href="predictions.html" class="nav-link">Predictions</a></li>
+                <li><a href="performance.html" class="nav-link">Performance</a></li>
+                <li><a href="about.html" class="nav-link">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1> College Football Betting Model</h1>
+            <p class="subtitle">Advanced ML predictions powered by comprehensive team statistics</p>
+        </header>
+
+        <!-- Team Stats Section -->
+        <div class="dashboard">
+            <div class="dashboard-header">
+                <div class="dashboard-title"> Team Rankings & Statistics</div>
+            </div>
+
+            <div class="team-search-container">
+                <input type="text" id="teamSearch" class="team-search-input" placeholder="Search by team name...">
+                <button class="reset-btn" onclick="resetSearch()">Reset</button>
+            </div>
+
+            <div class="stats-info">
+                Showing <span id="statsCount">0</span> teams | Season: <span id="statsSeason">2025</span>
+            </div>
+
+            <div class="team-stats-table-container">
+                <table class="team-stats-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="team">Team</th>
+                            <th class="sortable" data-sort="sp_overall">SP+ Overall</th>
+                            <th class="sortable" data-sort="off_ppa">Off PPA</th>
+                            <th class="sortable" data-sort="off_passing_downs_ppa">Off Pass PPA</th>
+                            <th class="sortable" data-sort="off_rushing_plays_ppa">Off Rush PPA</th>
+                            <th class="sortable" data-sort="off_success_rate">Off Success</th>
+                            <th class="sortable" data-sort="def_ppa">Def PPA</th>
+                            <th class="sortable" data-sort="def_passing_downs_ppa">Def Pass PPA</th>
+                            <th class="sortable" data-sort="def_rushing_plays_ppa">Def Rush PPA</th>
+                            <th class="sortable" data-sort="def_success_rate">Def Success</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teamStatsTableBody">
+                        <tr>
+                            <td colspan="10" style="text-align: center; color: #7a7a90;">Loading team data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination" id="paginationContainer"></div>
+        </div>
+
+ 
+
+    <!-- Team Detail Modal -->
+    <div class="team-detail-modal" id="teamDetailModal">
+        <div class="team-detail-content">
+            <div class="team-detail-header">
+                <div class="team-detail-title" id="modalTeamName">Team Name</div>
+                <button class="team-detail-close" onclick="closeTeamModal()">✕ Close</button>
+            </div>
+            <div id="modalTeamDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        let teamStatsData = [];
+        let filteredAndSortedData = [];
+        let currentPage = 1;
+        let currentSort = { field: 'sp_overall_rank', ascending: true };
+        const itemsPerPage = 1000;
+
+        function getColorByRank(rankValue, totalTeams = 134) {
+            if (rankValue <= 15) {
+                // Dark green fading to light green (1-15)
+                const t = (rankValue - 1) / 14;
+                const r = Math.round(0 + (200 * t)); // 0 → 200
+                const g = Math.round(100 + (155 * t)); // 100 → 255
+                const b = Math.round(0 + (200 * t)); // 0 → 200
+                return `rgb(${r}, ${g}, ${b})`;
+            } else if (rankValue <= 30) {
+                // Dark blue fading to light blue (16-30)
+                const t = (rankValue - 16) / 14;
+                const r = Math.round(0 + (100 * t)); // 0 → 100
+                const g = Math.round(50 + (150 * t)); // 50 → 200
+                const b = Math.round(150 + (105 * t)); // 150 → 255
+                return `rgb(${r}, ${g}, ${b})`;
+            } else if (rankValue <= 50) {
+                // Purple fading to light purple (31-50)
+                const t = (rankValue - 31) / 19;
+                const r = Math.round(100 + (100 * t)); // 100 → 200
+                const g = Math.round(0 + (150 * t)); // 0 → 150
+                const b = Math.round(150 + (105 * t)); // 150 → 255
+                return `rgb(${r}, ${g}, ${b})`;
+            } else if (rankValue <= 85) {
+                // Light orange fading to orange (51-85)
+                const t = (rankValue - 51) / 34;
+                const r = Math.round(255); // 255 (stays bright)
+                const g = Math.round(200 - (60 * t)); // 200 → 140
+                const b = Math.round(100 - (100 * t)); // 100 → 0
+                return `rgb(${r}, ${g}, ${b})`;
+            } else {
+                // Light pink fading to dark pink (86-136)
+                const t = (rankValue - 86) / 50;
+                const r = Math.round(255 - (55 * t)); // 255 → 200
+                const g = Math.round(200 - (150 * t)); // 200 → 50
+                const b = Math.round(220 - (120 * t)); // 220 → 100
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+        }
+
+        async function loadTeamStats() {
+            try {
+                const response = await fetch('avg_features_ranked.json');
+                teamStatsData = await response.json();
+                filteredAndSortedData = [...teamStatsData];
+                currentSort = { field: 'sp_overall_rank', ascending: true };
+                updateSortIndicators('sp_overall_rank');
+                displayTeamStats(teamStatsData);
+                updatePagination();
+            } catch (e) {
+                console.error('Error loading team stats:', e);
+                document.getElementById('teamStatsTableBody').innerHTML = '<tr><td colspan="10" style="text-align: center; color: #ff6b6b;">Error loading data</td></tr>';
+            }
+        }
+
+        function sortData(field) {
+            // Map field names to their corresponding rank fields
+            const rankFieldMap = {
+                'sp_overall': 'sp_overall_rank',
+                'off_ppa': 'off_ppa_rank',
+                'off_passing_downs_ppa': 'off_passing_downs_ppa_rank',
+                'off_rushing_plays_ppa': 'off_rushing_plays_ppa_rank',
+                'off_success_rate': 'off_success_rate_rank',
+                'def_ppa': 'def_ppa_rank',
+                'def_passing_downs_ppa': 'def_passing_downs_ppa_rank',
+                'def_rushing_plays_ppa': 'def_rushing_plays_ppa_rank',
+                'def_success_rate': 'def_success_rate_rank'
+            };
+
+            // Determine the rank field to sort by
+            const rankField = rankFieldMap[field] || field;
+            
+            // If clicking the same column, toggle direction
+            if (currentSort.field === rankField) {
+                currentSort.ascending = !currentSort.ascending;
+            } else {
+                currentSort.field = rankField;
+                // Default to ascending (best ranks first: #1, #2, etc.)
+                currentSort.ascending = true;
+            }
+            
+            filteredAndSortedData.sort((a, b) => {
+                let aVal = a[currentSort.field];
+                let bVal = b[currentSort.field];
+
+                // Handle string comparison
+                if (typeof aVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                    return currentSort.ascending ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                }
+
+                // Sort by rank values (lower rank number is better)
+                return currentSort.ascending ? aVal - bVal : bVal - aVal;
+            });
+
+            currentPage = 1;
+            updateSortIndicators(rankField);
+            renderTeamStatsTable(filteredAndSortedData);
+            updatePagination(filteredAndSortedData.length);
+        }
+
+        function updateSortIndicators(field) {
+            document.querySelectorAll('th.sortable').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (th.dataset.sort === field) {
+                    th.classList.add(currentSort.ascending ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+        }
+
+        function displayTeamStats(data) {
+            const searchTerm = document.getElementById('teamSearch').value.toLowerCase();
+            let filtered = data;
+
+            if (searchTerm) {
+                filtered = data.filter(team => team.team.toLowerCase().includes(searchTerm));
+            }
+
+            filteredAndSortedData = [...filtered];
+            
+            // Apply current sort
+            if (currentSort.field) {
+                filteredAndSortedData.sort((a, b) => {
+                    let aVal = a[currentSort.field];
+                    let bVal = b[currentSort.field];
+
+                    if (typeof aVal === 'string') {
+                        aVal = aVal.toLowerCase();
+                        bVal = bVal.toLowerCase();
+                        return currentSort.ascending ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                    }
+
+                    // Sort numerically by rank values
+                    return currentSort.ascending ? aVal - bVal : bVal - aVal;
+                });
+            }
+
+            document.getElementById('statsCount').textContent = filteredAndSortedData.length;
+            if (filteredAndSortedData.length > 0) {
+                document.getElementById('statsSeason').textContent = filteredAndSortedData[0].season;
+            }
+
+            renderTeamStatsTable(filteredAndSortedData);
+            updatePagination(filteredAndSortedData.length);
+        }
+
+        function renderTeamStatsTable(data) {
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const paginatedData = data.slice(start, end);
+
+            let html = '';
+            paginatedData.forEach(team => {
+                html += `
+                    <tr onclick="showTeamDetail('${team.team}', ${JSON.stringify(team).replace(/'/g, '&#39;')})">
+                        <td class="team-name-cell">${team.team}</td>
+                        <td><span style="background-color: ${getColorByRank(team.sp_overall_rank)}; color: black; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${team.sp_overall.toFixed(1)}</span> <span style="font-size: 0.75em; opacity: 0.7;">#${team.sp_overall_rank}</span></td>
+                        <td><span style="background-color: ${getColorByRank(team.off_ppa_rank)}; color: black; padding: 4px 8px; border-radius: 4px;">${team.off_ppa.toFixed(3)}</span> <span style="font-size: 0.75em; opacity: 0.7;">#${team.off_ppa_rank}</span></td>
+                        <td><span style="background-color: ${getColorByRank(team.off_passing_downs_ppa_rank)}; color: black; padding: 4px 8px; border-radius: 4px;">${team.off_passing_downs_ppa.toFixed(3)}</span> <span style="font-size: 0.75em; opacity: 0.7;">#${team.off_passing_downs_ppa_rank}</span></td>
+                        <td><span style="background-color: ${getColorByRank(team.off_rushing_plays_ppa_rank)}; color: black; padding: 4px 8px; border-radius: 4px;">${team.off_rushing_plays_ppa.toFixed(3)}</span> <span style="font-size: 0.75em; opacity: 0.7;">#${team.off_rushing_plays_ppa_rank}</span></td>
+                        <td><span style="background-color: ${getColorByRank(team.off_success_rate_rank)}; color: black; padding: 4px 8px; border-radius: 4px;">${(team.off_success_rate * 100).toFixed(1)}%</span> <span style="font-size: 0.75em; opacity: 0.7;">#${team.off_success_rate_rank}</span></td>
+                        <td><span style="background-color: ${getColorByRank(team.def_ppa_rank)}; color: black; padding: 4px 8px; border-radius: 4px;">${team.def_ppa.toFixed(3)}</span> <span style="font-size: 0.75em; opacity: 0.7;">#${team.def_ppa_rank}</span></td>
+                        <td><span style="background-color: ${getColorByRank(team.def_passing_downs_ppa_rank)}; color: black; padding: 4px 8px; border-radius: 4px;">${team.def_passing_downs_ppa.toFixed(3)}</span> <span style="font-size: 0.75em; opacity: 0.7;">#${team.def_passing_downs_ppa_rank}</span></td>
+                        <td><span style="background-color: ${getColorByRank(team.def_rushing_plays_ppa_rank)}; color: black; padding: 4px 8px; border-radius: 4px;">${team.def_rushing_plays_ppa.toFixed(3)}</span> <span style="font-size: 0.75em; opacity: 0.7;">#${team.def_rushing_plays_ppa_rank}</span></td>
+                        <td><span style="background-color: ${getColorByRank(team.def_success_rate_rank)}; color: black; padding: 4px 8px; border-radius: 4px;">${(team.def_success_rate * 100).toFixed(1)}%</span> <span style="font-size: 0.75em; opacity: 0.7;">#${team.def_success_rate_rank}</span></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('teamStatsTableBody').innerHTML = html || '<tr><td colspan="10" style="text-align: center; color: #7a7a90;">No teams found</td></tr>';
+        }
+
+        function updatePagination(totalItems = filteredAndSortedData.length) {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            const container = document.getElementById('paginationContainer');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = i === currentPage ? 'active' : '';
+                btn.onclick = () => {
+                    currentPage = i;
+                    renderTeamStatsTable(filteredAndSortedData);
+                };
+                container.appendChild(btn);
+            }
+        }
+
+        function showTeamDetail(teamName, teamData) {
+            const modal = document.getElementById('teamDetailModal');
+            document.getElementById('modalTeamName').textContent = teamName;
+
+            const details = `
+                <div class="team-detail-grid">
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Games Played</div>
+                        <div class="team-detail-value">${teamData.games_played}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Offensive PPA</div>
+                        <div class="team-detail-value">${teamData.off_ppa.toFixed(3)}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Defensive PPA</div>
+                        <div class="team-detail-value">${teamData.def_ppa.toFixed(3)}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Points For</div>
+                        <div class="team-detail-value">${teamData.points_for.toFixed(1)}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Points Against</div>
+                        <div class="team-detail-value">${teamData.points_against.toFixed(1)}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">SP+ Overall</div>
+                        <div class="team-detail-value">${teamData.sp_overall.toFixed(1)}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Offensive Rank</div>
+                        <div class="team-detail-value">#${teamData.off_ppa_rank}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Defensive Rank</div>
+                        <div class="team-detail-value">#${teamData.def_ppa_rank}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Off Total PPA</div>
+                        <div class="team-detail-value">${teamData.off_total_ppa.toFixed(2)}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Def Total PPA</div>
+                        <div class="team-detail-value">${teamData.def_total_ppa.toFixed(2)}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Off Success Rate</div>
+                        <div class="team-detail-value">${(teamData.off_success_rate * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Def Success Rate</div>
+                        <div class="team-detail-value">${(teamData.def_success_rate * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Off Explosiveness</div>
+                        <div class="team-detail-value">${teamData.off_explosiveness.toFixed(3)}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Def Explosiveness</div>
+                        <div class="team-detail-value">${teamData.def_explosiveness.toFixed(3)}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Off Passing Downs PPA</div>
+                        <div class="team-detail-value">${teamData.off_passing_downs_ppa.toFixed(3)}</div>
+                    </div>
+                    <div class="team-detail-item">
+                        <div class="team-detail-label">Def Passing Downs PPA</div>
+                        <div class="team-detail-value">${teamData.def_passing_downs_ppa.toFixed(3)}</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('modalTeamDetails').innerHTML = details;
+            modal.classList.add('active');
+        }
+
+        function closeTeamModal() {
+            document.getElementById('teamDetailModal').classList.remove('active');
+        }
+
+        function resetSearch() {
+            document.getElementById('teamSearch').value = '';
+            currentPage = 1;
+            currentSort = { field: 'sp_overall_rank', ascending: true };
+            document.querySelectorAll('th.sortable').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
+            updateSortIndicators('sp_overall_rank');
+            displayTeamStats(teamStatsData);
+        }
+
+        document.getElementById('teamSearch').addEventListener('input', () => {
+            currentPage = 1;
+            displayTeamStats(teamStatsData);
+        });
+
+        // Add click handlers to sortable headers
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                sortData(th.dataset.sort);
+            });
+        });
+
+        window.addEventListener('load', loadTeamStats);
+    </script>
+
+</body>
+</html>

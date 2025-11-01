@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Current Predictions - College Football Betting Model</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .predictions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .prediction-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(100, 200, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .prediction-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(100, 200, 255, 0.4);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(100, 200, 255, 0.1);
+        }
+
+        .card-matchup {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .team-name {
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #64c8ff;
+        }
+
+        .vs-text {
+            color: #7a7a90;
+            font-size: 0.8em;
+            font-weight: 600;
+            padding: 0 8px;
+        }
+
+        .confidence-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85em;
+            white-space: nowrap;
+        }
+
+        .confidence-badge.high {
+            background: rgba(100, 200, 100, 0.2);
+            color: #64c864;
+            border: 1px solid #64c864;
+        }
+
+        .confidence-badge.medium {
+            background: rgba(255, 200, 100, 0.2);
+            color: #ffc864;
+            border: 1px solid #ffc864;
+        }
+
+        .confidence-badge.low {
+            background: rgba(200, 100, 100, 0.2);
+            color: #c86464;
+            border: 1px solid #c86464;
+        }
+
+        .card-divider {
+            height: 1px;
+            background: rgba(100, 200, 255, 0.1);
+            margin: 15px 0;
+        }
+
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+        }
+
+        .card-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .row-label {
+            color: #7a7a90;
+            font-weight: 500;
+        }
+
+        .row-value {
+            color: #64c8ff;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .row-value.positive {
+            color: #64c864;
+        }
+
+        .row-value.negative {
+            color: #c86464;
+        }
+
+        .pick-section {
+            background: rgba(100, 200, 100, 0.1);
+            border: 1px solid rgba(100, 200, 100, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .pick-label {
+            color: #7a7a90;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .pick-team {
+            color: #64c864;
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .pick-prob {
+            color: #7a7a90;
+            font-size: 0.85em;
+        }
+
+        .confidence-bar-container {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(100, 200, 255, 0.1);
+        }
+
+        .confidence-bar-label {
+            color: #7a7a90;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(100, 200, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .confidence-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #64c8ff, #64c864);
+            transition: width 0.3s ease;
+        }
+
+        #content {
+            min-height: 200px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .empty-state p {
+            color: #a0a0b0;
+            font-size: 1.1em;
+        }
+
+        #modelSelector {
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: rgba(100, 200, 255, 0.1);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            color: #64c8ff;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        #modelSelector:hover {
+            background: rgba(100, 200, 255, 0.15);
+            border-color: rgba(100, 200, 255, 0.5);
+        }
+
+        #modelSelector option {
+            background: #1a1a2e;
+            color: #64c8ff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">🏈 CFB Betting Model</div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Dashboard</a></li>
+                <li><a href="predictions.html" class="nav-link active">Predictions</a></li>
+                <li><a href="performance.html" class="nav-link">Performance</a></li>
+                <li><a href="customize.html" class="nav-link">Customize</a></li>
+                <li><a href="about.html" class="nav-link">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>This Week's Predictions</h1>
+            <p class="subtitle">Current model picks with confidence levels and expected value</p>
+        </header>
+
+        <div class="dashboard">
+            <div class="dashboard-header">
+                <div class="dashboard-title" id="weekTitle">Loading...</div>
+                <div class="controls">
+                    <select id="modelSelector" onchange="changeModel(this.value)">
+                        <option value="quant">Quant Model</option>
+                        <option value="quant_spread">Quant Spread</option>
+                        <option value="quant_Adj">Quant Adjusted</option>
+                        <option value="quant_Adj_spread">Quant Adj Spread</option>
+                    </select>
+                    <button class="active" onclick="filterData('all')">All Picks</button>
+                    <button onclick="filterData('high')">High Confidence</button>
+                    <button onclick="filterData('positive')">Positive EV</button>
+                    <button onclick="refreshPredictions()" style="margin-left: auto;">🔄 Refresh</button>
+                </div>
+            </div>
+
+            <div id="content">
+                <div class="empty-state">
+                    <div class="empty-state-icon">⏳</div>
+                    <p>Loading predictions from server...</p>
+                </div>
+            </div>
+        </div>
+
+
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Prediction Details</div>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let currentFilter = 'all';
+        let currentModel = 'quant';
+        let teamFeaturesMap = {}; // Store features by team name
+        const API_BASE = 'http://localhost:3000/api';
+        
+        // Map model names to their corresponding JSON filenames
+        const MODEL_TO_FILE = {
+            'quant': 'quant_predictions_week10.json',
+            'quant_spread': 'quant_spread_predictions_week10.json',
+            'quant_Adj': 'quant_Adj_predictions_week10.json',
+            'quant_Adj_spread': 'quant_Adj_spread_predictions_week10.json'
+        };
+        
+        // Spread models list
+        const SPREAD_MODELS = ['quant_spread', 'quant_Adj_spread'];
+        
+        // Check if current model is a spread model
+        function isSpreadModel(model) {
+            return SPREAD_MODELS.includes(model);
+        }
+
+        // Load team features from JSON file
+        async function loadTeamFeatures() {
+            try {
+                const response = await fetch('./avg_features_ranked.json');
+                if (!response.ok) {
+                    throw new Error('Failed to load features');
+                }
+                const featuresArray = await response.json();
+                
+                // Create a lookup map by team name
+                featuresArray.forEach(teamData => {
+                    teamFeaturesMap[teamData.team] = {
+                        avg_off_total_ppa: teamData.off_total_ppa,
+                        avg_off_total_ppa_rank: teamData.off_total_ppa_rank,
+                        avg_off_success: teamData.off_success_rate,
+                        avg_off_success_rank: teamData.off_success_rate_rank,
+                        avg_off_passing_ppa: teamData.off_passing_downs_ppa,
+                        avg_off_passing_ppa_rank: teamData.off_passing_downs_ppa_rank,
+                        avg_off_rushing_ppa: teamData.off_rushing_plays_ppa,
+                        avg_off_rushing_ppa_rank: teamData.off_rushing_plays_ppa_rank,
+                        avg_def_total_ppa: teamData.def_total_ppa,
+                        avg_def_total_ppa_rank: teamData.def_total_ppa_rank,
+                        avg_def_success: teamData.def_success_rate,
+                        avg_def_success_rank: teamData.def_success_rate_rank,
+                        avg_def_passing_ppa: teamData.def_passing_downs_ppa,
+                        avg_def_passing_ppa_rank: teamData.def_passing_downs_ppa_rank,
+                        avg_def_rushing_ppa: teamData.def_rushing_plays_ppa,
+                        avg_def_rushing_ppa_rank: teamData.def_rushing_plays_ppa_rank,
+                        recent_off_total_ppa: teamData.off_total_ppa, // Using current season as recent
+                        recent_off_total_ppa_rank: teamData.off_total_ppa_rank,
+                        recent_def_total_ppa: teamData.def_total_ppa,
+                        recent_def_total_ppa_rank: teamData.def_total_ppa_rank,
+                        points_for: teamData.points_for,
+                        points_against: teamData.points_against
+                    };
+                });
+                console.log('Team features loaded:', Object.keys(teamFeaturesMap).length, 'teams');
+            } catch (error) {
+                console.warn('Could not load team features:', error);
+            }
+        }
+
+        async function loadPredictionsFromBackend() {
+            try {
+                document.getElementById('content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><p>Loading predictions...</p></div>';
+                
+                let loadedData = [];
+                
+                // Get the correct filename for this model
+                const jsonFilename = MODEL_TO_FILE[currentModel];
+                
+                console.log('Loading model:', currentModel);
+                console.log('Loading file:', jsonFilename);
+                
+                try {
+                    const response = await fetch(`./${jsonFilename}`);
+                    if (!response.ok) {
+                        throw new Error('HTTP error, status = ' + response.status);
+                    }
+                    loadedData = await response.json();
+                    console.log('Successfully loaded from JSON file:', loadedData.length, 'games');
+                } catch (error) {
+                    console.error('Error loading from file:', error);
+                    throw new Error(`Failed to load ${jsonFilename}. Make sure the file is in the same folder as predictions.html`);
+                }
+                
+                // Transform data to match card format based on model type
+                if (isSpreadModel(currentModel)) {
+                    // Spread models
+                    loadedData = loadedData.map(item => ({
+                        week: item.week,
+                        away_team: item.away_team,
+                        home_team: item.home_team,
+                        prediction: item.spread_prediction,
+                        spread: item.spread_numeric,
+                        formatted_spread: item.formatted_spread,
+                        predicted_margin: item.predicted_margin,
+                        predicted_outcome: item.predicted_outcome,
+                        predicted_outcome_confidence: item.predicted_outcome_confidence,
+                        predicted_outcome_ev: item.predicted_outcome_ev,
+                        predicted_outcome_roi_pct: item.predicted_outcome_roi_pct,
+                        favorite_team: item.favorite_team,
+                        home_cover_prob: item.home_cover_prob || 0.5,
+                        away_cover_prob: item.away_cover_prob || 0.5,
+                        confidence: item.predicted_outcome_confidence || 0.5,
+                        roi_pct: item.predicted_outcome_roi_pct || item.roi_pct || 0,
+                        expected_value: item.predicted_outcome_ev || item.ev_spread || 0,
+                        predicted_moneyline: 0,
+                        home_moneyline: 0,
+                        away_moneyline: 0,
+                        home_win_prob: item.home_win_prob || 0.5,
+                        // Add team features from lookup map
+                        homeTeamFeatures: teamFeaturesMap[item.home_team] || null,
+                        awayTeamFeatures: teamFeaturesMap[item.away_team] || null,
+                        _spreadData: item
+                    }));
+                } else {
+                    // Moneyline models (quant, quant_Adj)
+                    loadedData = loadedData.map(item => ({
+                        week: item.week,
+                        away_team: item.away_team,
+                        home_team: item.home_team,
+                        prediction: item.predicted_winner,
+                        home_moneyline: item.home_moneyline,
+                        away_moneyline: item.away_moneyline,
+                        winner_moneyline: item.winner_moneyline,
+                        home_win_prob: item.home_win_prob || 0.5,
+                        away_win_prob: item.away_win_prob || 0.5,
+                        winner_prob: item.winner_prob || 0.5,
+                        confidence: item.predicted_outcome_confidence || 0.5,
+                        roi_pct: item.roi_pct || 0,
+                        expected_value: item.ev_moneyline || 0,
+                        predicted_moneyline: item.winner_moneyline || 0,
+                        spread: 0,
+                        formatted_spread: 'N/A',
+                        predicted_margin: 0,
+                        predicted_outcome: 'N/A',
+                        home_cover_prob: item.home_win_prob || 0.5,
+                        away_cover_prob: item.away_win_prob || 0.5,
+                        // Add team features from lookup map
+                        homeTeamFeatures: teamFeaturesMap[item.home_team] || null,
+                        awayTeamFeatures: teamFeaturesMap[item.away_team] || null
+                    }));
+                }
+                
+                if (!Array.isArray(loadedData)) {
+                    loadedData = [loadedData];
+                }
+                
+                console.log('Predictions loaded:', loadedData.length, 'games');
+                console.log('Model:', currentModel);
+                if (loadedData.length > 0) {
+                    console.log('First prediction:', loadedData[0]);
+                }
+                
+                allData = loadedData;
+                localStorage.setItem('predictionsData', JSON.stringify(allData));
+                renderDashboard();
+            } catch (error) {
+                console.error('Error loading predictions:', error);
+                const errorMsg = error.message || 'Unknown error occurred';
+                document.getElementById('content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>' + errorMsg + '</p><p style="font-size: 0.9em; margin-top: 10px; color: #7a7a90;">Check browser console for details</p></div>';
+            }
+        }
+
+        function changeModel(model) {
+            currentModel = model;
+            currentFilter = 'all';
+            loadPredictionsFromBackend();
+            
+            // Reset filter buttons to 'all'
+            document.querySelectorAll('.controls button').forEach((btn, idx) => {
+                btn.classList.remove('active');
+                if (idx === 0) btn.classList.add('active');
+            });
+        }
+
+        function refreshPredictions() {
+            loadPredictionsFromBackend();
+        }
+
+        function filterData(type) {
+            currentFilter = type;
+            renderDashboard();
+            
+            document.querySelectorAll('.controls button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function getConfidenceClass(confidence) {
+            const confValue = parseFloat(confidence) || 0;
+            if (confValue >= 0.65) return 'high';
+            if (confValue >= 0.55) return 'medium';
+            return 'low';
+        }
+
+        function renderDashboard() {
+            let filteredData = allData;
+
+            if (currentFilter === 'high') {
+                filteredData = allData.filter(row => {
+                    const confidence = parseFloat(row.confidence) || 0;
+                    return confidence >= 0.65;
+                });
+            } else if (currentFilter === 'positive') {
+                filteredData = allData.filter(row => {
+                    const ev = parseFloat(row.expected_value) || 0;
+                    return ev > 0;
+                });
+            }
+
+            if (filteredData.length === 0) {
+                document.getElementById('content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><p>No predictions match the selected filter</p></div>';
+                return;
+            }
+
+            let cardsHTML = '<div class="predictions-grid">';
+            
+            filteredData.forEach((row) => {
+                const confidence = parseFloat(row.confidence) || 0;
+                const roi = parseFloat(row.roi_pct) || 0;
+                const spread = parseFloat(row.spread) || 0;
+                const prediction = row.prediction;
+                
+                let displayValue1, displayLabel1, displayValue2, displayLabel2;
+                let coverProb = 0;
+                
+                if (isSpreadModel(currentModel)) {
+                    // For spread models
+                    displayLabel1 = 'Predicted Outcome:';
+                    displayValue1 = row.predicted_outcome || (row.predicted_margin || 0).toFixed(1);
+                    displayLabel2 = 'Spread:';
+                    displayValue2 = row.formatted_spread || ((row.spread > 0 ? '+' : '') + (row.spread || 0).toFixed(1));
+                    
+                    // Use cover probability instead of win prob
+                    if (prediction === row.home_team) {
+                        coverProb = row.home_cover_prob || 0;
+                    } else {
+                        coverProb = row.away_cover_prob || 0;
+                    }
+                } else {
+                    // For moneyline models
+                    const homeWinProb = parseFloat(row.home_win_prob) || 0;
+                    const moneyline = row.predicted_moneyline || 0;
+                    displayLabel1 = 'Moneyline:';
+                    displayValue1 = (moneyline > 0 ? '+' : '') + Math.round(moneyline);
+                    displayLabel2 = '';
+                    displayValue2 = '';
+                    coverProb = prediction === row.home_team ? homeWinProb : (1 - homeWinProb);
+                }
+                
+                const confClass = getConfidenceClass(confidence);
+                const isPositiveEV = roi > 0;
+
+                cardsHTML += '<div class="prediction-card" onclick="openModal(event, \'' + row.away_team + '\', \'' + row.home_team + '\', \'' + prediction + '\', ' + coverProb + ', ' + confidence + ', ' + roi + ', \'' + currentModel + '\')">';
+                cardsHTML += '<div class="card-matchup"><div><div class="team-name">' + row.away_team + '</div><div class="vs-text">@</div><div class="team-name">' + row.home_team + '</div></div></div>';
+                cardsHTML += '<div class="card-row"><span class="row-label">Pick:</span><span class="row-value">' + prediction + '</span></div>';
+                cardsHTML += '<div class="card-row"><span class="row-label">' + displayLabel1 + '</span><span class="row-value">' + displayValue1 + '</span></div>';
+                if (displayLabel2) {
+                    cardsHTML += '<div class="card-row"><span class="row-label">' + displayLabel2 + '</span><span class="row-value">' + displayValue2 + '</span></div>';
+                }
+                cardsHTML += '<div class="card-divider"></div>';
+                cardsHTML += '<div class="card-row"><span class="row-label">Expected Value:</span><span class="row-value ' + (isPositiveEV ? 'positive' : 'negative') + '">' + (roi > 0 ? '+' : '') + roi.toFixed(2) + '%</span></div>';
+                cardsHTML += '<div class="pick-section"><div class="pick-label">' + (isSpreadModel(currentModel) ? 'Cover Probability' : 'Win Probability') + '</div><div class="pick-team">' + (coverProb * 100).toFixed(1) + '%</div><div class="pick-prob">Model Confidence</div></div>';
+                cardsHTML += '<div class="confidence-bar-container"><div class="confidence-bar-label">Confidence Level</div><div class="confidence-bar"><div class="confidence-bar-fill" style="width: ' + (confidence * 100).toFixed(0) + '%"></div></div></div>';
+                cardsHTML += '</div>';
+            });
+
+            cardsHTML += '</div>';
+            document.getElementById('content').innerHTML = cardsHTML;
+            
+            const weekNum = allData.length > 0 ? allData[0].week : 0;
+            document.getElementById('weekTitle').innerHTML = 'Week ' + weekNum + ' Predictions (' + filteredData.length + ' games) - ' + currentModel.toUpperCase();
+        }
+
+        function openModal(event, awayTeam, homeTeam, prediction, coverProb, confidence, roi, modelType) {
+            event.stopPropagation();
+            
+            // Find the prediction object to get team features
+            let predictionObj = null;
+            for (let i = 0; i < allData.length; i++) {
+                if (allData[i].away_team === awayTeam && allData[i].home_team === homeTeam) {
+                    predictionObj = allData[i];
+                    break;
+                }
+            }
+            
+            const homeFeatures = predictionObj && predictionObj.homeTeamFeatures ? predictionObj.homeTeamFeatures : null;
+            const awayFeatures = predictionObj && predictionObj.awayTeamFeatures ? predictionObj.awayTeamFeatures : null;
+            
+            let detailsHTML = '<div style="padding: 20px;">';
+            
+            // Prediction header
+            detailsHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">';
+            const isHomePicked = prediction === homeTeam;
+            detailsHTML += '<div style="text-align: center; padding: 15px; background: ' + (!isHomePicked ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.1)') + '; border-radius: 8px; border: 2px solid ' + (!isHomePicked ? '#64c864' : 'rgba(100, 200, 255, 0.3)') + ';"><div style="color: #a0a0b0; font-size: 0.8em; text-transform: uppercase; font-weight: 600;">Away</div><div style="color: ' + (!isHomePicked ? '#64c864' : '#64c8ff') + '; font-weight: bold; font-size: 1.2em;">' + awayTeam + '</div>' + (!isHomePicked ? '<div style="color: #64c864; font-size: 0.75em; margin-top: 5px; font-weight: 600;">✓ PICK</div>' : '') + '</div>';
+            detailsHTML += '<div style="text-align: center; padding: 15px; background: ' + (isHomePicked ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.1)') + '; border-radius: 8px; border: 2px solid ' + (isHomePicked ? '#64c864' : 'rgba(100, 200, 255, 0.3)') + ';"><div style="color: #a0a0b0; font-size: 0.8em; text-transform: uppercase; font-weight: 600;">Home</div><div style="color: ' + (isHomePicked ? '#64c864' : '#64c8ff') + '; font-weight: bold; font-size: 1.2em;">' + homeTeam + '</div>' + (isHomePicked ? '<div style="color: #64c864; font-size: 0.75em; margin-top: 5px; font-weight: 600;">✓ PICK</div>' : '') + '</div>';
+            detailsHTML += '</div>';
+            
+            // Add spread-specific info if applicable
+            if (modelType && (modelType.includes('spread')) && predictionObj) {
+                detailsHTML += '<div style="margin-bottom: 20px; padding: 15px; background: rgba(100, 200, 255, 0.08); border-radius: 8px; border-left: 3px solid #64c8ff;">';
+                detailsHTML += '<div style="color: #ffc864; font-weight: 600; margin-bottom: 10px; font-size: 0.95em;">SPREAD PREDICTION</div>';
+                detailsHTML += '<div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px;">';
+                detailsHTML += '<div><div style="color: #7a7a90; font-size: 0.8em;">Predicted Outcome</div><div style="color: #64c8ff; font-weight: bold; font-size: 1.1em;">' + (predictionObj.predicted_outcome || (predictionObj.predicted_margin || 0).toFixed(1)) + '</div></div>';
+                detailsHTML += '<div><div style="color: #7a7a90; font-size: 0.8em;">Spread</div><div style="color: #64c8ff; font-weight: bold; font-size: 1.1em;">' + (predictionObj.formatted_spread || ((predictionObj.spread > 0 ? '+' : '') + (predictionObj.spread || 0).toFixed(1))) + '</div></div>';
+                detailsHTML += '</div>';
+                detailsHTML += '<div style="padding: 10px; background: rgba(100, 200, 255, 0.05); border-radius: 6px;"><div style="color: #7a7a90; font-size: 0.8em;">Favorite Team</div><div style="color: #64c8ff; font-weight: bold; font-size: 1.1em;">' + (predictionObj.favorite_team || 'N/A') + '</div></div>';
+                detailsHTML += '</div>';
+            }
+            
+            detailsHTML += '<div style="color: #64c8ff; font-weight: bold; margin-bottom: 15px; font-size: 1.1em;">TEAM STATISTICS</div>';
+            
+            if (homeFeatures && awayFeatures) {
+                // Offensive Stats
+                detailsHTML += '<div style="margin-bottom: 20px;">';
+                detailsHTML += '<div style="color: #ffc864; font-weight: 600; margin-bottom: 10px; font-size: 0.95em;">OFFENSIVE EFFICIENCY</div>';
+                
+                // TOTAL OFF PPA (higher is better) - Compare by RANK (lower rank = better)
+                const homeOffTotalPPA = homeFeatures.avg_off_total_ppa;
+                const awayOffTotalPPA = awayFeatures.avg_off_total_ppa;
+                const homeOffTotalPPARank = homeFeatures.avg_off_total_ppa_rank;
+                const awayOffTotalPPARank = awayFeatures.avg_off_total_ppa_rank;
+                const homeOffTotalPPABetter = homeOffTotalPPARank < awayOffTotalPPARank;
+                
+                detailsHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">';
+                detailsHTML += '<div style="background: ' + (!homeOffTotalPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (!homeOffTotalPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">TOTAL OFF PPA</div><div style="color: ' + (!homeOffTotalPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (awayFeatures.avg_off_total_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + awayFeatures.avg_off_total_ppa_rank + '</div></div>';
+                detailsHTML += '<div style="background: ' + (homeOffTotalPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (homeOffTotalPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">TOTAL OFF PPA</div><div style="color: ' + (homeOffTotalPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (homeFeatures.avg_off_total_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + homeFeatures.avg_off_total_ppa_rank + '</div></div>';
+                detailsHTML += '</div>';
+                
+                // OFF SUCCESS (higher is better) - Compare by RANK (lower rank = better)
+                const homeOffSuccess = homeFeatures.avg_off_success;
+                const awayOffSuccess = awayFeatures.avg_off_success;
+                const homeOffSuccessRank = homeFeatures.avg_off_success_rank;
+                const awayOffSuccessRank = awayFeatures.avg_off_success_rank;
+                const homeOffSuccessBetter = homeOffSuccessRank < awayOffSuccessRank;
+                
+                detailsHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">';
+                detailsHTML += '<div style="background: ' + (!homeOffSuccessBetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (!homeOffSuccessBetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">OFF SUCCESS</div><div style="color: ' + (!homeOffSuccessBetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (awayFeatures.avg_off_success * 100).toFixed(1) + '%</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + awayFeatures.avg_off_success_rank + '</div></div>';
+                detailsHTML += '<div style="background: ' + (homeOffSuccessBetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (homeOffSuccessBetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">OFF SUCCESS</div><div style="color: ' + (homeOffSuccessBetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (homeFeatures.avg_off_success * 100).toFixed(1) + '%</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + homeFeatures.avg_off_success_rank + '</div></div>';
+                detailsHTML += '</div>';
+                
+                // OFF PASSING PPA (higher is better) - Compare by RANK (lower rank = better)
+                const homeOffPassingPPA = homeFeatures.avg_off_passing_ppa;
+                const awayOffPassingPPA = awayFeatures.avg_off_passing_ppa;
+                const homeOffPassingPPARank = homeFeatures.avg_off_passing_ppa_rank;
+                const awayOffPassingPPARank = awayFeatures.avg_off_passing_ppa_rank;
+                const homeOffPassingPPABetter = homeOffPassingPPARank < awayOffPassingPPARank;
+                
+                detailsHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">';
+                detailsHTML += '<div style="background: ' + (!homeOffPassingPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (!homeOffPassingPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">PASS PPA</div><div style="color: ' + (!homeOffPassingPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (awayFeatures.avg_off_passing_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + awayFeatures.avg_off_passing_ppa_rank + '</div></div>';
+                detailsHTML += '<div style="background: ' + (homeOffPassingPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (homeOffPassingPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">PASS PPA</div><div style="color: ' + (homeOffPassingPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (homeFeatures.avg_off_passing_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + homeFeatures.avg_off_passing_ppa_rank + '</div></div>';
+                detailsHTML += '</div>';
+                
+                // OFF RUSHING PPA (higher is better) - Compare by RANK (lower rank = better)
+                const homeOffRushingPPA = homeFeatures.avg_off_rushing_ppa;
+                const awayOffRushingPPA = awayFeatures.avg_off_rushing_ppa;
+                const homeOffRushingPPARank = homeFeatures.avg_off_rushing_ppa_rank;
+                const awayOffRushingPPARank = awayFeatures.avg_off_rushing_ppa_rank;
+                const homeOffRushingPPABetter = homeOffRushingPPARank < awayOffRushingPPARank;
+                
+                detailsHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">';
+                detailsHTML += '<div style="background: ' + (!homeOffRushingPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (!homeOffRushingPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">RUSH PPA</div><div style="color: ' + (!homeOffRushingPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (awayFeatures.avg_off_rushing_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + awayFeatures.avg_off_rushing_ppa_rank + '</div></div>';
+                detailsHTML += '<div style="background: ' + (homeOffRushingPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (homeOffRushingPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">RUSH PPA</div><div style="color: ' + (homeOffRushingPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (homeFeatures.avg_off_rushing_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + homeFeatures.avg_off_rushing_ppa_rank + '</div></div>';
+                detailsHTML += '</div>';
+
+                // Defensive Stats
+                detailsHTML += '<div style="margin-bottom: 20px;">';
+                detailsHTML += '<div style="color: #ff8a8a; font-weight: 600; margin-bottom: 10px; font-size: 0.95em;">DEFENSIVE EFFICIENCY</div>';
+                
+                // TOTAL DEF PPA (lower is better for defense) - Compare by RANK (lower rank = better)
+                const homeDefTotalPPA = homeFeatures.avg_def_total_ppa;
+                const awayDefTotalPPA = awayFeatures.avg_def_total_ppa;
+                const homeDefTotalPPARank = homeFeatures.avg_def_total_ppa_rank;
+                const awayDefTotalPPARank = awayFeatures.avg_def_total_ppa_rank;
+                const homeDefTotalPPABetter = homeDefTotalPPARank < awayDefTotalPPARank;
+                
+                detailsHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">';
+                detailsHTML += '<div style="background: ' + (!homeDefTotalPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (!homeDefTotalPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">TOTAL DEF PPA</div><div style="color: ' + (!homeDefTotalPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (awayFeatures.avg_def_total_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + awayFeatures.avg_def_total_ppa_rank + '</div></div>';
+                detailsHTML += '<div style="background: ' + (homeDefTotalPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (homeDefTotalPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">TOTAL DEF PPA</div><div style="color: ' + (homeDefTotalPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (homeFeatures.avg_def_total_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + homeFeatures.avg_def_total_ppa_rank + '</div></div>';
+                detailsHTML += '</div>';
+                
+                // DEF SUCCESS (higher is better for defense) - Compare by RANK (lower rank = better)
+                const homeDefSuccess = homeFeatures.avg_def_success;
+                const awayDefSuccess = awayFeatures.avg_def_success;
+                const homeDefSuccessRank = homeFeatures.avg_def_success_rank;
+                const awayDefSuccessRank = awayFeatures.avg_def_success_rank;
+                const homeDefSuccessBetter = homeDefSuccessRank < awayDefSuccessRank;
+                
+                detailsHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">';
+                detailsHTML += '<div style="background: ' + (!homeDefSuccessBetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (!homeDefSuccessBetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">DEF SUCCESS</div><div style="color: ' + (!homeDefSuccessBetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (awayFeatures.avg_def_success * 100).toFixed(1) + '%</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + awayFeatures.avg_def_success_rank + '</div></div>';
+                detailsHTML += '<div style="background: ' + (homeDefSuccessBetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (homeDefSuccessBetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">DEF SUCCESS</div><div style="color: ' + (homeDefSuccessBetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (homeFeatures.avg_def_success * 100).toFixed(1) + '%</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + homeFeatures.avg_def_success_rank + '</div></div>';
+                detailsHTML += '</div>';
+                
+                // DEF PASSING PPA (lower is better for defense) - Compare by RANK (lower rank = better)
+                const homeDefPassingPPA = homeFeatures.avg_def_passing_ppa;
+                const awayDefPassingPPA = awayFeatures.avg_def_passing_ppa;
+                const homeDefPassingPPARank = homeFeatures.avg_def_passing_ppa_rank;
+                const awayDefPassingPPARank = awayFeatures.avg_def_passing_ppa_rank;
+                const homeDefPassingPPABetter = homeDefPassingPPARank < awayDefPassingPPARank;
+                
+                detailsHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">';
+                detailsHTML += '<div style="background: ' + (!homeDefPassingPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (!homeDefPassingPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">PASS PPA</div><div style="color: ' + (!homeDefPassingPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (awayFeatures.avg_def_passing_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + awayFeatures.avg_def_passing_ppa_rank + '</div></div>';
+                detailsHTML += '<div style="background: ' + (homeDefPassingPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (homeDefPassingPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">PASS PPA</div><div style="color: ' + (homeDefPassingPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (homeFeatures.avg_def_passing_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + homeFeatures.avg_def_passing_ppa_rank + '</div></div>';
+                detailsHTML += '</div>';
+                
+                // DEF RUSHING PPA (lower is better for defense) - Compare by RANK (lower rank = better)
+                const homeDefRushingPPA = homeFeatures.avg_def_rushing_ppa;
+                const awayDefRushingPPA = awayFeatures.avg_def_rushing_ppa;
+                const homeDefRushingPPARank = homeFeatures.avg_def_rushing_ppa_rank;
+                const awayDefRushingPPARank = awayFeatures.avg_def_rushing_ppa_rank;
+                const homeDefRushingPPABetter = homeDefRushingPPARank < awayDefRushingPPARank;
+                
+                detailsHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">';
+                detailsHTML += '<div style="background: ' + (!homeDefRushingPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (!homeDefRushingPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">RUSH PPA</div><div style="color: ' + (!homeDefRushingPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (awayFeatures.avg_def_rushing_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + awayFeatures.avg_def_rushing_ppa_rank + '</div></div>';
+                detailsHTML += '<div style="background: ' + (homeDefRushingPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (homeDefRushingPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">RUSH PPA</div><div style="color: ' + (homeDefRushingPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (homeFeatures.avg_def_rushing_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + homeFeatures.avg_def_rushing_ppa_rank + '</div></div>';
+                detailsHTML += '</div>';
+
+                // Recent Performance
+                detailsHTML += '<div>';
+                detailsHTML += '<div style="color: #64c864; font-weight: 600; margin-bottom: 10px; font-size: 0.95em;">RECENT FORM (Last 3 Games)</div>';
+                
+                // RECENT TOTAL OFF PPA (higher is better) - Compare by RANK (lower rank = better)
+                const homeRecentOffTotalPPA = homeFeatures.recent_off_total_ppa;
+                const awayRecentOffTotalPPA = awayFeatures.recent_off_total_ppa;
+                const homeRecentOffTotalPPARank = homeFeatures.recent_off_total_ppa_rank;
+                const awayRecentOffTotalPPARank = awayFeatures.recent_off_total_ppa_rank;
+                const homeRecentOffTotalPPABetter = homeRecentOffTotalPPARank < awayRecentOffTotalPPARank;
+                
+                detailsHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">';
+                detailsHTML += '<div style="background: ' + (!homeRecentOffTotalPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (!homeRecentOffTotalPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">RECENT TOTAL OFF PPA</div><div style="color: ' + (!homeRecentOffTotalPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (awayFeatures.recent_off_total_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + awayFeatures.recent_off_total_ppa_rank + '</div></div>';
+                detailsHTML += '<div style="background: ' + (homeRecentOffTotalPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (homeRecentOffTotalPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">RECENT TOTAL OFF PPA</div><div style="color: ' + (homeRecentOffTotalPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (homeFeatures.recent_off_total_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + homeFeatures.recent_off_total_ppa_rank + '</div></div>';
+                detailsHTML += '</div>';
+                
+                // RECENT TOTAL DEF PPA (lower is better for defense) - Compare by RANK (lower rank = better)
+                const homeRecentDefTotalPPA = homeFeatures.recent_def_total_ppa;
+                const awayRecentDefTotalPPA = awayFeatures.recent_def_total_ppa;
+                const homeRecentDefTotalPPARank = homeFeatures.recent_def_total_ppa_rank;
+                const awayRecentDefTotalPPARank = awayFeatures.recent_def_total_ppa_rank;
+                const homeRecentDefTotalPPABetter = homeRecentDefTotalPPARank < awayRecentDefTotalPPARank;
+                
+                detailsHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">';
+                detailsHTML += '<div style="background: ' + (!homeRecentDefTotalPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (!homeRecentDefTotalPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">RECENT TOTAL DEF PPA</div><div style="color: ' + (!homeRecentDefTotalPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (awayFeatures.recent_def_total_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + awayFeatures.recent_def_total_ppa_rank + '</div></div>';
+                detailsHTML += '<div style="background: ' + (homeRecentDefTotalPPABetter ? 'rgba(100, 200, 100, 0.15)' : 'rgba(100, 200, 255, 0.08)') + '; padding: 10px; border-radius: 6px; border-left: 3px solid ' + (homeRecentDefTotalPPABetter ? '#64c864' : '#64c8ff') + ';"><div style="font-size: 0.75em; color: #7a7a90; margin-bottom: 3px;">RECENT TOTAL DEF PPA</div><div style="color: ' + (homeRecentDefTotalPPABetter ? '#64c864' : '#64c8ff') + '; font-weight: bold;">' + (homeFeatures.recent_def_total_ppa).toFixed(3) + '</div><div style="font-size: 0.7em; color: #7a7a90; margin-top: 4px;">Rank: ' + homeFeatures.recent_def_total_ppa_rank + '</div></div>';
+                detailsHTML += '</div>';
+                detailsHTML += '</div>';
+            } else {
+                detailsHTML += '<div style="color: #a0a0b0; padding: 15px; background: rgba(100, 200, 255, 0.1); border-radius: 8px;">Team statistics not available for this matchup</div>';
+            }
+            
+            detailsHTML += '</div></div>';
+
+            document.getElementById('modalBody').innerHTML = detailsHTML;
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+
+        document.getElementById('detailModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('detailModal')) {
+                closeModal();
+            }
+        });
+
+        window.addEventListener('load', () => {
+            loadTeamFeatures();
+            loadPredictionsFromBackend();
+        });
+    </script>
+</body>
+</html>
